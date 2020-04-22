@@ -4,5 +4,31 @@
     </head>
     <body>
         <h1>Instagram Feed Test</h1>
+        <div id="feed">
+
+        </div>
+
+        <style>
+            img {
+                width: 200px;
+            }
+        </style>
+        <script>
+            fetch('https://graph.instagram.com/me/media?fields=id,caption,media_url,media_type,permalink&access_token=')
+            .then((response) => {
+                return response.json();
+            })
+            .then((response_json) =>{
+                var medias = response_json.data;
+                var feed_container = document.getElementById('feed');
+                medias.forEach((media) => {
+                    var image = document.createElement('img');
+                    image.src = media.media_url;
+                    feed_container.appendChild(image);
+                });
+                console.log(response);
+            });
+        </script>
+   
     </body>
 </html>
