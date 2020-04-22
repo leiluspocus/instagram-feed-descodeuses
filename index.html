@@ -5,58 +5,78 @@
     <body>
         <h1>Instagram Feed Test</h1>
         <button id="authorize">Authorize</button>
-        <div id="feed">
+        <div id="error">
 
         </div>
-           <!--TOKEN = AQA6dEiNG5FFut8qGn6M57GTHc9R8ShtCRjeT2g9uorYfzEqa3rC_Px6QTZQ4OKR6Il45_vcNfrHyQXfcHBH7pwozRt1QgBUrz7s__P7EWDD1jgbEZm44E9SXixdKv3hEZmcX3x4oRKXhCrUslKepQRNQw8GvAmmZvrx6wEY3N_7KJCqTj1P7VRhEJP1LNb1wdn4CMPmjE8Ve3PulZeci6GmMLusBMZd5_7jPLiAHp1QXg-->
-        
+        <div id="feed">
+
+        </div>        
 
         <style>
             img {
                 width: 200px;
             }
+
+            #error {
+                background-color: red;
+                color: black;
+            }
         </style>
         <script>
+            var client_id = '210954820358365'; // Remplacer par le client id de l'application
+            var client_secret = '58e98af983ba2d9c8133f6a010fadc1a'; // Remplacer par le secret de l'application
+            var redirect_uri = 'https://leiluspocus.github.io/instagram-feed-descodeuses/'; // Remplacer par votre callback d'application
+
             document.getElementById('authorize').addEventListener('click', (event) => {
-                window.open('https://api.instagram.com/oauth/authorize?client_id=210954820358365&redirect_uri=https://leiluspocus.github.io/instagram-feed-descodeuses/&scope=user_profile,user_media&response_type=code');
+                /* Step 1: On ouvre la route qui nous permettra la récupération d'un code en vue de s'authentifier */
+                window.open('https://api.instagram.com/oauth/authorize?client_id='+ client_id +'&redirect_uri='+ redirect_uri +'&scope=user_profile,user_media&response_type=code');
             });
 
             var superurl = new URLSearchParams(window.location.search);
-            console.log(superurl);
-            console.log(superurl.get("code"));
+
+            /* Step 2: On récupère le code d'authentification pour récupérer un access_token */
             if ( superurl.get("code") !== null) {
                 console.log(superurl.get("code"));
-                fetch('https://api.instagram.com/oauth/access_token', {
-                    method: 'POST',
-                    body: JSON.stringify(
-                        {
-                            client_id: '210954820358365', 
-                            client_secret: '58e98af983ba2d9c8133f6a010fadc1a',
-                            grant_type: 'authorization_code',
-                            redirect_uri: 'https://leiluspocus.github.io/instagram-feed-descodeuses/',
-                            code: superurl.get("code")
-                        }
-                    )
+                const body = new FormData();
+                body.append("client_id", client_id); 
+                body.append("client_secret", client_secret);
+                body.append("grant_type", "authorization_code");
+                body.append("redirect_uri", redirect_uri);
+                body.append("code", superurl.get("code"));
+
+                fetch("https://api.instagram.com/oauth/access_token", {
+                    method: "POST",
+                    body: body
                 }).then((response) => {
-                    var content = response.json();
-                    console.log(content);
-                });
-
-
-                /*fetch('https://graph.instagram.com/me/media?fields=id,caption,media_url,media_type,permalink&access_token=IGQVJXQmJSdGhWaUNEd2xoQnpjYmtfeVowcWdLWWxEakRjWVc2V3pYeUV4NEYtTUI2TW9JZAEdyQ2dtdWhjMUdQXzNUcmlKbk5obFlxcGxjVmdielVuenpRUm92RU9JRUpXNF9ZAMVFRWTlicTJicjZAudHVldWVTem50V1VJ')
-                .then((response) => {
                     return response.json();
+                }).then((json_response) => {
+                    if ( json_response.access_token !== undefined ) {
+                        /* Etape 3: Si on a bien un access_token valide, on récupère les derniers medias associés au compte */
+                        fetch('https://graph.instagram.com/me/media?fields=id,caption,media_url,media_type,permalink&access_token=' + json_response.access_token)
+                        .then((response) => {
+                            return response.json();
+                        })
+                        .then((response_json) =>{
+                            document.getElementById('error').innerHTML = '';
+                            var medias = response_json.data;
+                            var feed_container = document.getElementById('feed');
+                            medias.forEach((media) => {
+                                var image = document.createElement('img');
+                                image.src = media.media_url;
+                                feed_container.appendChild(image);
+                            });
+                            console.log(response_json);
+                        });
+                    }
+                    else {
+                        document.getElementById('error').innerHTML = '<p>' + json_response.error_message + ' </p> <p>Générez un nouveau code en cliquant sur Authorize</p>';
+                    }
                 })
-                .then((response_json) =>{
-                    var medias = response_json.data;
-                    var feed_container = document.getElementById('feed');
-                    medias.forEach((media) => {
-                        var image = document.createElement('img');
-                        image.src = media.media_url;
-                        feed_container.appendChild(image);
-                    });
-                    console.log(response_json);
-                });*/
+                .catch((error) => {
+                    alert("Vous devez générer un nouveau code");
+                    console.log(error);
+                })
+
             }
 
         </script>
